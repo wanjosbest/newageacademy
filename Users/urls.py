@@ -1,26 +1,31 @@
 from django.urls import path
 from .import views
-
-
-
+from Users.views import  PaystackInitPaymentView,PaystackVerifyPaymentView,PaystackWebhookView,promotedcourseView
 
 urlpatterns =[
     
      path("api/admin-login/",views.admin_login, name="admin_login"),
      path("api/admin-logout/",views.admin_logout, name="admin_logout"),
-     path("api/tutor-login/",views.tutor_login, name="tutor_login"),
-    
-     path("api/tutor-logout/",views.tutor_logout, name="tutor-logout"),
+     path("api/user-login/",views.user_login, name="user_login"),
+     path('api/paystack/initialize/', PaystackInitPaymentView.as_view(), name='paystack-initialize'),
+     path('api/paystack/verify/<str:reference>/', PaystackVerifyPaymentView.as_view(), name='paystack-verify'),
+     path('api/paystack/webhook/', PaystackWebhookView.as_view(), name='paystack-webhook'),
+     path("api/user-logout/",views.user_logout, name="user-logout"),
      #ADMIN CRUD Tutor
      path("api/tutor-register/",views.tutor_register, name="tutor_register"),
-     path("api/view-tutor/",views.view_tutor, name="view_tutor"),
+     path("api/get-tutor/",views.gettutor, name="view_tutor"),
      path("api/update-tutor/<str:id>/",views.update_tutor, name="update_user"),
      path("api/delete-tutor/<str:id>/",views.delete_tutor, name="delete_user"),
-     #admin CRUD
+     #admin CRUD courses
      path("api/addcourse/",views.addCourses, name="addcourse"),
      path("api/getcourse/",views.getCourses, name="getcourse"),
      path("api/updatecourse/<str:id>/",views.updateCourses, name="updatecourse"),
      path("api/deletecourse/<str:id>/",views.deleteCourses, name="deletecourse"),
+      #admin CRUD course modules
+     path("api/addcourse-module/",views.addCoursemodule, name="addcoursemodule"),
+     path("api/getcourse-module/",views.getCoursemodule, name="getcoursemodule"),
+     path("api/updatecourse-module/<str:id>/",views.updateCoursemodule, name="updatecoursemodule"),
+     path("api/deletecourse-module/<str:id>/",views.deleteCoursemodule, name="deletecoursemodule"),
      #end ADMIN CRUD
 
      # allow only tutor to add live class
@@ -60,6 +65,11 @@ urlpatterns =[
      path("api/update-examtimetable/<str:id>/", views.updateexamtimetable, name="updateexamtimetable"),
      path("api/delete-examtimetable/<str:id>/", views.deleteexamtimetable, name="deleteexamtimetable"),
      path("api/view-examtimetable/", views.viewexamtimetable, name="viewexamtimetable"),
- 
+     # referal code
+     # path("api/referral/", views.ReferalView.as_view(), name="referral"),
+     path("api/promote-course/", views.promotedcourseView.as_view(), name="promotedcourse"),
+     # register user with referal link
+     #path("api/register-user/",views.referalregister, name="register-user"),
+       
 
 ]

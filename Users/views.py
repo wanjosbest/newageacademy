@@ -1,21 +1,29 @@
-from django.shortcuts import render,HttpResponse
+from django.shortcuts import render,HttpResponse,get_object_or_404
 import os
+import requests
+import uuid
+from rest_framework.parsers import JSONParser
+from django.http import HttpResponse, JsonResponse
+from .models import Wallet, ReferralCode
 from django.template.loader import render_to_string
 from rest_framework import generics
 from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
-from .serializers import REGAPISerializer,available_Courses_registrationserialization,liveclassSerializer,studentattendanceSerializer,sturegistercourseSerializer,anouncementSerializer,CreateAssignmentSerializer,ChangePasswordSerializer,coursetableSerializer,examtableSerializer
+from rest_framework import views
+from .serializers import (REGAPISerializer,available_Courses_registrationserialization,liveclassSerializer,
+                          studentattendanceSerializer,anouncementSerializer,CreateAssignmentSerializer,
+                          ChangePasswordSerializer,coursetableSerializer,examtableSerializer,
+                          sturegistercourseSerializer,coursemoduleSerializer,promotedcoursesSerializer,
+                          UserSerializer,WalletSerializer,ReferralCodeSerializer)
 from rest_framework import status
 from rest_framework.response import Response
-from .serializers import REGAPISerializer,available_Courses_registrationserialization,liveclassSerializer,studentattendanceSerializer,ChangePasswordSerializer,coursetimetable,examtimetable
 from  rest_framework.decorators import api_view, permission_classes
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate,login,logout
 from django.core.exceptions import ObjectDoesNotExist
-from .models import User,available_Courses,studentatten,sturegistercourse,anouncement,CreateAssignment
+from .models import User,available_Courses,studentatten,anouncement,CreateAssignment,User,available_Courses,studentatten,coursetimetable,examtimetable,registercoursestu,coursemodule,promotedcourses
 from rest_framework.permissions import AllowAny
-from .models import User,available_Courses,studentatten
 from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect
@@ -27,45 +35,43 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.forms import PasswordResetForm
-from django.core.mail import  send_mail,EmailMessage
-from django.template.loader import render_to_string
 from rest_framework.views import APIView
 from academy.settings import EMAIL_HOST_USER
-from django.contrib.auth.tokens import default_token_generator
-from django.contrib.auth.forms import PasswordResetForm
 from django.core.mail import  send_mail,BadHeaderError
-from django.template.loader import render_to_string
-from rest_framework.views import APIView
+from .paystack import Paystack
+
+
 
 #Admin CRUD USers
 #admin create user
+
+    
+
+
+
 @csrf_protect
 @api_view(["POST"])
 def tutor_register(request):
     if request.method=="POST":
-       useremail= request.data.get("email")
        serializer=REGAPISerializer(data=request.data)
        if serializer.is_valid():
           serializer.save()
           return Response(serializer.data, status=status.HTTP_201_CREATED)
+       return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-
 
 
 #authenticated users to view users
 @csrf_protect
 @api_view(["GET"])
-def view_tutor(request):
+#@permission_classes([IsAuthenticated])
+def gettutor(request):
     if request.user.is_authenticated:
       post=User.objects.all()
       if request.method=="GET":
         serializer=REGAPISerializer(post, many=True)
         return Response(serializer.data,status=status.HTTP_302_FOUND)
-    return Response(status = status.HTTP_401_UNAUTHORIZED)
+    return Response(status = status.HTTP_401_UNAUTHORIZED) 
 # only admin can update users
 @api_view(["PUT"])
 @csrf_protect
@@ -109,18 +115,18 @@ def delete_tutor(request,id):
 #userlogin
 @csrf_protect
 @api_view(['POST'])
-def tutor_login(request):
+def user_login(request):
     if request.method == 'POST':
         username = request.data.get('username')
         password = request.data.get('password')
-        serializer=REGAPISerializer(data=request.data)
+        #serializer=REGAPISerializer(data=request.data)
         user = None
        
         if not user:
             user = authenticate(username=username, password=password)
-        if user.is_tutor:
-           login(request, user)
         if user:
+           login(request, user)
+        if user.is_authenticated:
             token, _ = Token.objects.get_or_create(user=user)
             return Response({'token': token.key}, status=status.HTTP_200_OK,)
     return Response( status=status.HTTP_401_UNAUTHORIZED)
@@ -167,7 +173,7 @@ def admin_logout(request):
 
 @api_view(['POST'])
 @csrf_protect
-def tutor_logout(request):
+def user_logout(request):
     if request.user.is_authenticated:
       if request.method == 'POST':
         try:
@@ -231,13 +237,66 @@ def deleteCourses(request,id):
          post.delete()
          return Response(status = status.HTTP_204_NO_CONTENT)
     return Response(status = status.HTTP_401_UNAUTHORIZED)
+
+
+#add course modules
+@csrf_protect
+@api_view(["POST"])
+#@permission_classes([IsAdminUser])
+def addCoursemodule(request):
+    if request.user.is_superuser:
+        if request.method=="POST":
+         serializer=coursemoduleSerializer(data=request.data)
+         if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(status = status.HTTP_401_UNAUTHORIZED)
+#view course modules
+@csrf_protect
+@api_view(["GET"])
+#@permission_classes([IsAuthenticated])
+def getCoursemodule(request):
+    if request.user.is_authenticated:
+      post=coursemodule.objects.all()
+      if request.method=="GET":
+        serializer=coursemoduleSerializer(post, many=True)
+        return Response(serializer.data,status=status.HTTP_302_FOUND)
+    return Response(status = status.HTTP_401_UNAUTHORIZED)
+
+#update course module
+
+@csrf_protect   
+@api_view(["PUT"])
+#@permission_classes([IsAdminUser])
+def updateCoursemodule(request,id):
+    if request.user.is_superuser:
+       post=coursemodule.objects.get(id=id)
+       if request.method=="PUT":
+         serializer=coursemoduleSerializer(post,data=request.data)
+         if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+       return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)   
+    return Response(serializer.data, status=status.HTTP_401_UNAUTHORIZED)
+
+#delete course module
+@csrf_protect
+@api_view(["DELETE"])
+#@permission_classes([IsAdminUser])
+def deleteCoursemodule(request,id):
+    if request.user.is_superuser:
+      post=coursemodule.objects.get(id=id)
+      if request.method=="DELETE":
+         post.delete()
+         return Response(status = status.HTTP_204_NO_CONTENT)
+    return Response(status = status.HTTP_401_UNAUTHORIZED)
    
 
     
 # admin allow only tutor to add live class posts
 @csrf_protect
 @api_view(["POST"])
-
 def tutorliveclasspost(request):
     if request.user.is_tutor: 
        if request.method =="POST":
@@ -246,18 +305,6 @@ def tutorliveclasspost(request):
              serializer.save()
              return Response(serializer.data,status = status.HTTP_201_CREATED)
     return Response(status = status.HTTP_401_UNAUTHORIZED)
-
-@permission_classes([IsAdminUser])
-def tutorliveclasspost(request):
-      if request.user.is_tutor: 
-         if request.method =="POST":
-            serializer = liveclassSerializer(data = request.data)
-            if serializer.is_valid():
-               serializer.save()
-               return Response(serializer.data,status = status.HTTP_201_CREATED)
-      return Response(status = status.HTTP_401_UNAUTHORIZED)
-
-
 
 # storing student attendance
 
@@ -281,20 +328,19 @@ def atten(request):
 
 #tutor change password
 @api_view(['POST'])
-
 def change_password(request):
     if request.user.is_authenticated:
-        if request.method == 'POST':
-            serializer = ChangePasswordSerializer(data=request.data)
-            if serializer.is_valid():
-                user = request.user
-                if user.check_password(serializer.data.get('old_password')):
-                    user.set_password(serializer.data.get('new_password'))
-                    user.save()
-                    update_session_auth_hash(request, user)  # To update session after password change
-                    return Response({'message': 'Password changed successfully.'}, status=status.HTTP_200_OK)
-                return Response({'error': 'Incorrect old password.'}, status=status.HTTP_400_BAD_REQUEST)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+       if request.method == 'POST':
+          serializer = ChangePasswordSerializer(data=request.data)
+          if serializer.is_valid():
+             user = request.user
+             if user.check_password(serializer.data.get('old_password')):
+                user.set_password(serializer.data.get('new_password'))
+                user.save()
+                update_session_auth_hash(request, user)  # To update session after password change
+                return Response({'message': 'Password changed successfully.'}, status=status.HTTP_200_OK)
+          return Response({'error': 'Incorrect old password.'}, status=status.HTTP_400_BAD_REQUEST)
+       return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     return Response ( status = status.HTTP_401_UNAUTHORIZED)
 
 
@@ -304,13 +350,13 @@ def change_password(request):
 def registercourse(request):
     if request.user.is_student:
        if request.method=="POST":
-          id = request.data.get("id")
+          course_id = request.data.get("course")
           email = request.user.email
           firstname = request.user.first_name
           lastname = request.user.last_name
-          serializers = studentattendanceSerializer(data = request.data)
+          serializers = sturegistercourseSerializer(data = request.data)
           if serializers.is_valid():
-             savecourse = sturegistercourse.objects.create(course_id=id,email=email, FirstName=firstname, LastName=lastname)
+             savecourse = registercoursestu.objects.create(course_id=course_id,email=email, FirstName=firstname, LastName=lastname)
              savecourse.save()
              return Response({"Course registered"}, status= status.HTTP_201_CREATED)
        return Response( status= status.HTTP_400_BAD_REQUEST)
@@ -426,23 +472,6 @@ def updateassignment(request,id):
     return Response(status = status.HTTP_401_UNAUTHORIZED)
 #end of assignment and class work CRUD
 
-
-
-@permission_classes([IsAuthenticated])
-def change_password(request):
-    if request.method == 'POST':
-        serializer = ChangePasswordSerializer(data=request.data)
-        if serializer.is_valid():
-            user = request.user
-            if user.check_password(serializer.data.get('old_password')):
-                user.set_password(serializer.data.get('new_password'))
-                user.save()
-                update_session_auth_hash(request, user)  # To update session after password change
-                return Response({'message': 'Password changed successfully.'}, status=status.HTTP_200_OK)
-            return Response({'error': 'Incorrect old password.'}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 # tutor and admin add class time table
 #add schedule
 @api_view(["POST"])
@@ -539,5 +568,148 @@ def deleteexamtimetable(request,id):
          return Response(status = status.HTTP_200_OK)
     return Response(status = status.HTTP_401_UNAUTHORIZED)
 
-#checking out sending emails
+#paystack payment processing
+class PaystackInitPaymentView(APIView):
+    def post(self, request, *args, **kwargs):
+        amount = request.data.get('amount')
+        email = request.user.email
+        if email:   
+           paystack = Paystack()
+           response = paystack.initialize_payment(email, amount)
+           if response and response.get('status'):
+              return Response(response['data'], status=status.HTTP_200_OK)
+        return Response({"error": "Please use registered email"}, status=status.HTTP_401_UNAUTHORIZED)
 
+#verify payment
+class PaystackVerifyPaymentView(APIView):
+    def get(self, request, *args, **kwargs):
+        reference = request.query_params.get("reference")
+        if not reference:
+            return Response({"error": "Reference is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        paystack = Paystack()
+        response = paystack.verify_payment(reference)
+        if response and response.get('status'):
+            data = response['data']
+            # You can save the transaction details or mark it as verified
+            return Response(data, status=status.HTTP_200_OK)
+        return Response({"error": "Payment verification failed"}, status=status.HTTP_400_BAD_REQUEST)
+
+#webhook
+class PaystackWebhookView(APIView):
+    def post(self, request, *args, **kwargs):
+        payload = request.data
+        event = payload.get("event")
+        if event == "charge.success":
+            # Process successful payment
+            print("Payment verified:", payload)
+        return Response(status=status.HTTP_200_OK)
+    
+    
+    # generate referal code
+"""
+class ReferalView(APIView):
+      def post(self, request):
+          if request.user.is_affiliate:
+             user = request.user
+             try:
+                 referal =Referal.objects.get (user = user)
+                 serializer = ReferalSerializer(referal)
+                 return Response(serializer.data, status = status.HTTP_201_CREATED)
+             except Referal.DoesNotExist:
+                referal_code = self.generate_referral_code()
+                referal_link = f'http://127.0.0.1:8000/{request.user}/{referal_code}'
+                referal = Referal.objects.create(user = user, referal_code = referal_code, referal_link = referal_link)
+                serializer = ReferalSerializer(referal)
+                return Response(serializer.data, status = status.HTTP_201_CREATED)
+          return Response( status = status.HTTP_401_UNAUTHORIZED)
+      
+        #referal code function using uuid
+      def generate_referral_code(self):
+            return str(uuid.uuid4())[:8]
+      
+      
+#register user with referal link
+@api_view(["POST"])
+@csrf_protect
+def referalregister(request):
+    if request.method=="POST":
+       first_name = request.data.get("first_name") 
+       last_name = request.data.get("last_name")
+       email = request.data.get("email")
+       username = request.data.get("username")
+       password = request.data.get("password")
+       is_student = request.data.get("is_student")
+       referer = request.data.get("referer")
+       savestu = User.objects.create(first_name = first_name, last_name = last_name, email = email, username = username, is_student = is_student,referer = referer)
+       savestu.set_password(password)
+       savestu.save()
+       return Response( status = status.HTTP_201_CREATED)
+    return Response ( status = status.HTTP_400_BAD_REQUEST)
+   
+ """  
+
+
+        
+#affiliate promoted course view
+
+class promotedcourseView(APIView):
+    
+    def post(self,request):
+        if request.user.is_affiliate:
+           user = request.user
+           course = request.data.get("course")
+           description = request.data.get("description")
+           title = request.data.get("title")
+           savepromoted = promotedcourses.objects.create(user = user, course_id = course,title = title, description = description)
+           savepromoted.save()
+           serializer = promotedcoursesSerializer(savepromoted)
+           return Response(serializer.data, status = status.HTTP_201_CREATED)
+        return Response( status = status.HTTP_401_UNAUTHORIZED)
+    
+#affiliate referal section view
+
+class RegisterView(views.APIView):
+    def post(self, request):
+        data = JSONParser().parse(request)
+        serializer = UserSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=201)
+        return JsonResponse(serializer.errors, status=400)
+
+
+class WalletDetailView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        wallet = Wallet.objects.get(user=request.user)
+        serializer = WalletSerializer(wallet)
+        return JsonResponse(serializer.data, status=200)
+
+
+class ReferralView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        code = ReferralCode.objects.get(user=request.user)
+        serializer = ReferralCodeSerializer(code)
+        return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        data = JSONParser().parse(request)
+        serializer = ReferralCodeSerializer(data=data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse({"msg": f"Referral code sent to {serializer.validated_data.get('to_email')}"}, status = 202)
+        return JsonResponse(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+            
+
+    
+    
+
+
+
+
+   
+       

@@ -1,8 +1,7 @@
 from django.contrib import admin
 
-from .models import User,available_Courses,liveclass,studentatten,sturegistercourse,anouncement,CreateAssignment,coursetimetable,coursemodule,examtimetable
+from .models import User,available_Courses,liveclass,studentatten,anouncement,CreateAssignment,coursetimetable,coursemodule,examtimetable,registercoursestu,Transaction,promotedcourses
 
-from .models import User,available_Courses,liveclass,studentatten
 
 
 admin.site.register(User)
@@ -15,11 +14,16 @@ admin.site.register(available_Courses,available_CoursesAdmin)
 admin.site.register(liveclass)
 admin.site.register(studentatten)
 
-admin.site.register(sturegistercourse)
+admin.site.register(registercoursestu)
 admin.site.register(anouncement)
 admin.site.register(CreateAssignment)
 admin.site.register(coursetimetable)
 admin.site.register(coursemodule)
 admin.site.register(examtimetable)
+admin.site.register(Transaction)
+admin.site.register(promotedcourses)
+#admin.site.register(Referal)
+
+
 
 

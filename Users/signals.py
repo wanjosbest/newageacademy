@@ -1,3 +1,4 @@
+'''
 from django.core.mail import EmailMultiAlternatives
 from django.shortcuts import render
 from django.dispatch import receiver
@@ -20,7 +21,7 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     :param kwargs:
     :return:
     """
-    '''
+   
     # send an e-mail to the user
     context = {
         'current_user': reset_password_token.user,
@@ -30,7 +31,7 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
             instance.request.build_absolute_uri(reverse('password_reset:reset-password-confirm')),
             reset_password_token.key)
     }
-   '''
+  
     # render email text
  
 
@@ -47,3 +48,19 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     )
   
     msg.send()
+'''
+
+from django.dispatch import receiver
+from .models import User
+from django.db.models.signals import post_save
+from .models import ReferralCode, Wallet
+
+@receiver(post_save, sender=User)
+def create_referral_code(sender, instance, created, **kwargs):
+    if created:
+        ReferralCode.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def create_user_wallet(sender, instance, created, **kwargs):
+    if created:
+        Wallet.objects.create(user=instance)

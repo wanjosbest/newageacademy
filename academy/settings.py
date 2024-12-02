@@ -38,11 +38,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Users.apps.UsersConfig',
+    'Users',
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
-    'django_rest_passwordreset',
+   
+   # 'django_rest_passwordreset',
 
     
 ]
@@ -115,7 +116,7 @@ DATABASES = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'newage_db',
+        'NAME': 'newageacademydb',
         'USER': 'root',
         'PASSWORD':'0903620Wanjos@#$',
         'HOST': '127.0.0.1',
@@ -195,5 +196,6 @@ EMAIL_USE_SSL=False
 #paystack conf
 PAYSTACK_PUBLIC_KEY = 'pk_test_ba6445195c7557b64f6c040a4f9260b5dc7103a8'
 PAYSTACK_SECRET_KEY = 'sk_test_895f2ab861d5b795b4fe5eb79a01b9b593446e57'
-PAYSTACK_CURRENCY = 'USD'
+PAYSTACK_CURRENCY = 'NGN'
+
 
