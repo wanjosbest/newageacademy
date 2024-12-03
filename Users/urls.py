@@ -66,10 +66,11 @@ urlpatterns =[
      path("api/delete-examtimetable/<str:id>/", views.deleteexamtimetable, name="deleteexamtimetable"),
      path("api/view-examtimetable/", views.viewexamtimetable, name="viewexamtimetable"),
      # referal code
-     # path("api/referral/", views.ReferalView.as_view(), name="referral"),
+     path("api/referral/", views.ReferalView.as_view(), name="referral"),
      path("api/promote-course/", views.promotedcourseView.as_view(), name="promotedcourse"),
      # register user with referal link
-     #path("api/register-user/",views.referalregister, name="register-user"),
+     # path("api/register-user/",views.referalregister, name="register-user"),
+     path("",views.countreferals, name="register-user"),
        
 
 ]

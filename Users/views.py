@@ -1,10 +1,6 @@
 from django.shortcuts import render,HttpResponse,get_object_or_404
 import os
 import requests
-import uuid
-from rest_framework.parsers import JSONParser
-from django.http import HttpResponse, JsonResponse
-from .models import Wallet, ReferralCode
 from django.template.loader import render_to_string
 from rest_framework import generics
 from django.conf import settings
@@ -15,14 +11,18 @@ from .serializers import (REGAPISerializer,available_Courses_registrationseriali
                           studentattendanceSerializer,anouncementSerializer,CreateAssignmentSerializer,
                           ChangePasswordSerializer,coursetableSerializer,examtableSerializer,
                           sturegistercourseSerializer,coursemoduleSerializer,promotedcoursesSerializer,
-                          UserSerializer,WalletSerializer,ReferralCodeSerializer)
+                          ReferalSerializer
+                         )
 from rest_framework import status
 from rest_framework.response import Response
 from  rest_framework.decorators import api_view, permission_classes
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate,login,logout
 from django.core.exceptions import ObjectDoesNotExist
-from .models import User,available_Courses,studentatten,anouncement,CreateAssignment,User,available_Courses,studentatten,coursetimetable,examtimetable,registercoursestu,coursemodule,promotedcourses
+from .models import (User,available_Courses,studentatten,anouncement,CreateAssignment,User,available_Courses,
+                     studentatten,coursetimetable,examtimetable,registercoursestu,coursemodule,promotedcourses,
+                     Referral
+)
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 from django.contrib import messages
@@ -607,47 +607,28 @@ class PaystackWebhookView(APIView):
     
     
     # generate referal code
-"""
+
 class ReferalView(APIView):
       def post(self, request):
           if request.user.is_affiliate:
              user = request.user
              try:
-                 referal =Referal.objects.get (user = user)
+                 referal =Referral.objects.get (user = user)
                  serializer = ReferalSerializer(referal)
                  return Response(serializer.data, status = status.HTTP_201_CREATED)
-             except Referal.DoesNotExist:
-                referal_code = self.generate_referral_code()
-                referal_link = f'http://127.0.0.1:8000/{request.user}/{referal_code}'
-                referal = Referal.objects.create(user = user, referal_code = referal_code, referal_link = referal_link)
+             except Referral.DoesNotExist:
+                referal_code = request.user.username
+                referal = Referral.objects.create(user = user, referal_code = referal_code)
                 serializer = ReferalSerializer(referal)
                 return Response(serializer.data, status = status.HTTP_201_CREATED)
           return Response( status = status.HTTP_401_UNAUTHORIZED)
-      
+    
         #referal code function using uuid
-      def generate_referral_code(self):
-            return str(uuid.uuid4())[:8]
+      
       
       
 #register user with referal link
-@api_view(["POST"])
-@csrf_protect
-def referalregister(request):
-    if request.method=="POST":
-       first_name = request.data.get("first_name") 
-       last_name = request.data.get("last_name")
-       email = request.data.get("email")
-       username = request.data.get("username")
-       password = request.data.get("password")
-       is_student = request.data.get("is_student")
-       referer = request.data.get("referer")
-       savestu = User.objects.create(first_name = first_name, last_name = last_name, email = email, username = username, is_student = is_student,referer = referer)
-       savestu.set_password(password)
-       savestu.save()
-       return Response( status = status.HTTP_201_CREATED)
-    return Response ( status = status.HTTP_400_BAD_REQUEST)
-   
- """  
+
 
 
         
@@ -667,43 +648,14 @@ class promotedcourseView(APIView):
            return Response(serializer.data, status = status.HTTP_201_CREATED)
         return Response( status = status.HTTP_401_UNAUTHORIZED)
     
-#affiliate referal section view
+#referal count
 
-class RegisterView(views.APIView):
-    def post(self, request):
-        data = JSONParser().parse(request)
-        serializer = UserSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
+def countreferals(request):
+    if request.method == "POST":
+       username = "wanjos"
+       referral = User.objects.get(referer = username).counts()
+    return render(request, "index.html", {"count":referral})
 
-
-class WalletDetailView(views.APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        wallet = Wallet.objects.get(user=request.user)
-        serializer = WalletSerializer(wallet)
-        return JsonResponse(serializer.data, status=200)
-
-
-class ReferralView(views.APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        code = ReferralCode.objects.get(user=request.user)
-        serializer = ReferralCodeSerializer(code)
-        return JsonResponse(serializer.data, status=status.HTTP_200_OK)
-    
-    def post(self, request):
-        data = JSONParser().parse(request)
-        serializer = ReferralCodeSerializer(data=data, context={'request': request})
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse({"msg": f"Referral code sent to {serializer.validated_data.get('to_email')}"}, status = 202)
-        return JsonResponse(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
-            
 
     
     

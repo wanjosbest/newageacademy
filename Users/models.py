@@ -1,12 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-import uuid
-import secrets
-
-
-def generate_referral_code():
-    return str(uuid.uuid4())[:8]
-
 
 
 #tutor register
@@ -26,9 +19,8 @@ class User(AbstractUser):
     last_login = models.DateTimeField(auto_now=True, null = True)
     date_joined = models.DateTimeField(auto_now_add=True, null = True)
     email = models.EmailField(max_length=255, null=True, unique=True)
-    # referral_code = models.CharField(max_length=10, unique=True, default=generate_referral_code)
-    #referrer = models.CharField(max_length=255,null=True )
-    referer = models.CharField(max_length=255,null=True)
+    referer = models.CharField(max_length=255,null=True,blank=True)
+    
 
     class Meta:
         verbose_name="User"
@@ -37,11 +29,6 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
     
-   
-    
-   
-    
-
     
 ## add courses
 class available_Courses(models.Model):
@@ -160,19 +147,17 @@ class Transaction(models.Model):
     verified = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    def __str__ (self):
         return self.reference
 
 #referal code for affiliate
-"""  
-class Referal (models. Model):
+class Referral (models. Model):
     user = models.ForeignKey(User, null=True, related_name="userreferal", on_delete = models.CASCADE)
     referal_code = models.CharField(max_length = 255, null =True, unique = True)
-    referal_link = models.CharField(max_length=255, null=True,unique=True)
     create_at = models.DateTimeField(auto_now_add= True)
-    referrer = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='referred_users')
-    def __str__(self):
-        return self.referal_link
+    
+    def __str__ (self):
+        return self.referal_code
  
 # referal tracker
 class ReferralTracker(models.Model):
@@ -182,40 +167,9 @@ class ReferralTracker(models.Model):
 
     def __str__(self):
         return f"{self.referred_user.username} referred by {self.referrer.username}"
-"""
-
-class ReferralCode(models.Model):
-    """
-    Model for referral code.
-    """
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    code = models.CharField(max_length=154, unique=True)
-
-    def generate_code(self):
-        username = self.user.username
-        random_code = secrets.token_hex(2)
-        return username+random_code
-
-    def save(self, *args, **kwargs):
-        self.code = self.generate_code()
-
-        return super(ReferralCode, self).save(*args, **kwargs)
 
 
-class Referral(models.Model):
-    """
-    For capturing who referred whom.
-    """
-    referred_by = models.ForeignKey(User, unique=False, on_delete=models.DO_NOTHING, related_query_name='my_referral')
-    referred_to = models.OneToOneField(User, on_delete=models.DO_NOTHING, related_query_name='has_referred')
-    
-class Wallet(models.Model):
-    """
-    Wallet to store affiliate's credits.
-    """
-    user = models.OneToOneField(User, on_delete=models.DO_NOTHING)
-    credits = models.FloatField(default=0.0)
-#ended
+
 
 class promotedcourses(models.Model):
    title = models.CharField(max_length=255,unique=True, null=True)
