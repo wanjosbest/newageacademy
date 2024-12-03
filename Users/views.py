@@ -650,11 +650,7 @@ class promotedcourseView(APIView):
     
 #referal count
 
-def countreferals(request):
-    if request.method == "POST":
-       username = "wanjos"
-       referral = User.objects.get(referer = username).counts()
-    return render(request, "index.html", {"count":referral})
+
 
 
     

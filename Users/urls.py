@@ -70,7 +70,7 @@ urlpatterns =[
      path("api/promote-course/", views.promotedcourseView.as_view(), name="promotedcourse"),
      # register user with referal link
      # path("api/register-user/",views.referalregister, name="register-user"),
-     path("",views.countreferals, name="register-user"),
+     
        
 
 ]
