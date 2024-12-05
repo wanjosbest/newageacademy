@@ -183,4 +183,3 @@ class promotedcourses(models.Model):
 
 
 
-

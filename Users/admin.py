@@ -1,7 +1,8 @@
 from django.contrib import admin
 
 from .models import (User,available_Courses,liveclass,studentatten,anouncement,CreateAssignment,coursetimetable,
-                     coursemodule,examtimetable,registercoursestu,Transaction,promotedcourses,Referral,)
+                     coursemodule,examtimetable,registercoursestu,Transaction,promotedcourses,Referral,
+                     )
 
 
 

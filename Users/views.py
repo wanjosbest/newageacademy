@@ -44,11 +44,6 @@ from .paystack import Paystack
 
 #Admin CRUD USers
 #admin create user
-
-    
-
-
-
 @csrf_protect
 @api_view(["POST"])
 def tutor_register(request):
@@ -205,12 +200,12 @@ def addCourses(request):
 @api_view(["GET"])
 #@permission_classes([IsAuthenticated])
 def getCourses(request):
-    if request.user.is_authenticated:
+    #if request.user.is_authenticated:
       post=available_Courses.objects.all()
       if request.method=="GET":
         serializer=available_Courses_registrationserialization(post, many=True)
         return Response(serializer.data,status=status.HTTP_302_FOUND)
-    return Response(status = status.HTTP_401_UNAUTHORIZED) 
+   # return Response(status = status.HTTP_401_UNAUTHORIZED) 
 
 @csrf_protect   
 @api_view(["PUT"])
@@ -623,15 +618,9 @@ class ReferalView(APIView):
                 return Response(serializer.data, status = status.HTTP_201_CREATED)
           return Response( status = status.HTTP_401_UNAUTHORIZED)
     
-        #referal code function using uuid
+       
       
-      
-      
-#register user with referal link
-
-
-
-        
+         
 #affiliate promoted course view
 
 class promotedcourseView(APIView):
@@ -649,15 +638,16 @@ class promotedcourseView(APIView):
         return Response( status = status.HTTP_401_UNAUTHORIZED)
     
 #referal count
-
-
-
+@api_view(["GET"])
+@csrf_protect
+def refferalcount(request):
+    if request.user.is_affiliate:
+       userrefferal = User.objects.filter(referer =f"{request.user.username}")
+       totalrefferals = userrefferal.count()
+       initialprice = 1000
+       totalprice = totalrefferals * initialprice
+       return Response (f" your total referals is:{totalrefferals} and your total earning is: N{totalprice}")
+    return Response( status = status.HTTP_401_UNAUTHORIZED)
 
     
-    
-
-
-
-
    
-       
