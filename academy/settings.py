@@ -83,7 +83,7 @@ REST_FRAMEWORK = {
      
 }
 
-AUTH_USER_MODEL = "Users.User"
+#AUTH_USER_MODEL = "Users.User"
 
 ROOT_URLCONF = 'academy.urls'
 
