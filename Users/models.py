@@ -1,185 +1,153 @@
-from django.db import models
-from django.contrib.auth.models import AbstractUser
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+from datetime import datetime
+from django.conf import settings
+# MongoDB connection setup
+from urllib.parse import quote_plus
+# Your username and password
+username = "wanjos"
+password = "0903620Wanjos@#$"  # Special characters like @ must be escaped
 
+# Escape the username and password
+escaped_username = quote_plus(username)
+escaped_password = quote_plus(password)
+MONGO_URI =f"mongodb+srv://{escaped_username}:{escaped_password}@newagedatabase.40ybp.mongodb.net/?retryWrites=true&w=majority&appName=newagedatabase"
+client = MongoClient(MONGO_URI)
+db = client['newagedatabase']
 
-#tutor register
-class User(AbstractUser):
-   
-    first_name =models.CharField(max_length=50,null=True)
-    last_name =models.CharField(max_length=50,null=True)
-    username =models.CharField(max_length=50,null=True, unique =True)
-    password = models.CharField(max_length=255,null=True)
-    address=models.CharField(max_length=255,null=True,blank=True)
-    is_tutor=models.BooleanField(verbose_name="Tutor Status",null=True,default=False,blank=True)
-    is_student = models.BooleanField(verbose_name="Student Status",null=True,default=False,blank=True)
-    is_affiliate = models.BooleanField(verbose_name="Affiliate Status",null=True,default=False,blank=True)
-    is_superuser = models.BooleanField(verbose_name="Superuser Status",null=True,default=False,blank=True)
-    is_active = models.BooleanField(verbose_name="Active Status",null=True,default=True,blank=True)
-    is_staff = models.BooleanField(verbose_name="Staff Status",null=True,default=False,blank=True)
-    last_login = models.DateTimeField(auto_now=True, null = True)
-    date_joined = models.DateTimeField(auto_now_add=True, null = True)
-    email = models.EmailField(max_length=255, null=True, unique=True)
-    referer = models.CharField(max_length=255,null=True,blank=True)
-    
+# User Collection
+class User:
+    collection = db['users']
 
-    class Meta:
-        verbose_name="User"
-        verbose_name_plural="Users"
+    @staticmethod
+    def create_user(data):
+        data['date_joined'] = datetime.now()
+        return User.collection.insert_one(data).inserted_id
 
-    def __str__(self):
-        return self.username
-    
-    
-## add courses
-class available_Courses(models.Model):
-    author = models.ForeignKey(User, related_name="tutoraddcourse",on_delete=models.CASCADE,null=True)
-    title=models.CharField(max_length=30,null=True)
-    slug=models.SlugField(max_length=20,null=True)
+    @staticmethod
+    def find_user_by_id(user_id):
+        return User.collection.find_one({"_id": ObjectId(user_id)})
 
-    class Meta:
-        verbose_name="available_Courses"
-        verbose_name_plural="available Courses"
-        
-    def __str__(self):
-        return self.title
-#add course module
-class coursemodule(models.Model):
-    course = models.ForeignKey(available_Courses, null=True, related_name="availablecoursemodules", on_delete=models.CASCADE)
-    module = models.CharField(max_length=30,null=True)
-    title = models.CharField(max_length=255, null=True, blank=True,unique=True)
+    @staticmethod
+    def find_user_by_username(username):
+        return User.collection.find_one({"username": username})
 
-    def __str__(self):
-        return f'{self.module} {self.title}'
+# Available Courses Collection
+class AvailableCourses:
+    collection = db['available_courses']
 
+    @staticmethod
+    def add_course(data):
+        return AvailableCourses.collection.insert_one(data).inserted_id
 
+    @staticmethod
+    def get_course(course_id):
+        return AvailableCourses.collection.find_one({"_id": ObjectId(course_id)})
 
-    
-#tutor to add live classes
+# Course Module Collection
+class CourseModule:
+    collection = db['course_modules']
 
-class liveclass(models.Model):
-   #  course = models.ForeignKey(available_Courses, related_name="liveclasscourse",on_delete=models.CASCADE,null=True)
-     class_name=models.ForeignKey(coursemodule, related_name="moduleliveclass",on_delete=models.CASCADE,null=True)
-     class_description=models.TextField(max_length=1000,verbose_name="About the Live Class",null=True)
-     class_link=models.CharField(max_length=255,unique=True,null=True,blank=False)
-     def __str__(self):
-         return f'{self.class_name}'
-     
-#student attendance 
+    @staticmethod
+    def add_module(data):
+        return CourseModule.collection.insert_one(data).inserted_id
 
-class studentatten(models.Model):
-    student_email=models.EmailField(max_length=100, unique=True,null=True, verbose_name ="Student Email") 
-    course_code = models.ForeignKey(coursemodule, related_name="courseattendance",on_delete=models.CASCADE,null=True)
-    status = models.CharField(max_length=10,choices=(('P','PRESENT'),('A','ABSENT')),default='PRESENT')
-    entry_time = models.DateTimeField( null=True, auto_now_add = True, auto_now = False,blank=True)
-    #student_name = models.ForeignKey(User, related_name="userattendance",on_delete=models.CASCADE,null=True)
+    @staticmethod
+    def get_modules_by_course(course_id):
+        return CourseModule.collection.find({"course_id": ObjectId(course_id)})
 
-    def __str__(self):
-       return f"{self.course_code}  {self.student_email} "
-    
-    class Meta:
-        verbose_name="studentattendance"
-        verbose_name_plural="Student Attendance"
- 
-  
+# Live Classes Collection
+class LiveClass:
+    collection = db['live_classes']
 
-class registercoursestu(models.Model):
-    course=models.ForeignKey(available_Courses, related_name="sturegcoursename",null=True, on_delete=models.CASCADE)
-    email=models.CharField(max_length=50, null=True, unique=True)
-    FirstName=models.CharField(max_length=50, null=True)
-    LastName=models.CharField(max_length=50, null=True)
-    date = models.DateTimeField(null=True, auto_now_add=True, auto_now=False)
-    def __str__(self):
-        return f' {self.FirstName} {self.LastName} {self.course}'
+    @staticmethod
+    def add_live_class(data):
+        return LiveClass.collection.insert_one(data).inserted_id
 
-#password reset 
+# Student Attendance Collection
+class StudentAttendance:
+    collection = db['student_attendance']
 
-    
+    @staticmethod
+    def mark_attendance(data):
+        data['entry_time'] = datetime.now()
+        return StudentAttendance.collection.insert_one(data).inserted_id
 
-class anouncement(models.Model):
-    Tutor = models.CharField(max_length=20, null=True)
-    title = models.CharField(max_length=255, null=True,unique=True)
-    content = models.TextField(null=True)
-    date = models.DateTimeField(null=True, auto_now=True)
+# Registered Courses for Students Collection
+class RegisteredCourses:
+    collection = db['registered_courses']
 
-    def __str__(self):
-        return f'{self.title} By {self.Tutor}'
-    
-#Tutor create assignment and class work
-class CreateAssignment(models.Model):
-    Tutor = models.CharField(max_length=20, null=True)
-    course= models.ForeignKey(available_Courses, related_name="createassginmentcourse", null=True,on_delete=models.CASCADE)
-    title =models.CharField(max_length=255, null=True,unique=True)
-    content = models.TextField(null=True)
-    date = models.DateTimeField(null=True, auto_now=True)
+    @staticmethod
+    def register_student(data):
+        data['date'] = datetime.now()
+        return RegisteredCourses.collection.insert_one(data).inserted_id
 
+# Announcements Collection
+class Announcement:
+    collection = db['announcements']
 
-    def __str__(self):
-       return f'{self.title} assignment for {self.course}'
-    
-# add course timetable schedules
+    @staticmethod
+    def create_announcement(data):
+        data['date'] = datetime.now()
+        return Announcement.collection.insert_one(data).inserted_id
 
-class coursetimetable(models.Model):
-    course=models.ForeignKey(coursemodule, related_name="timetablecourse", null=True,on_delete=models.CASCADE)
-    date = models.DateField(null=True)
-    time = models.TimeField(null=True)
-    link = models.CharField(max_length=255,null=True)
-      
-    def __str__(self):
-        return f'{self.course} {self.date}'
+# Assignments Collection
+class Assignment:
+    collection = db['assignments']
 
-#add exam for courses
-    
-class examtimetable(models.Model):
-    course=models.ForeignKey(coursemodule, related_name="timetableexam", null=True,on_delete=models.CASCADE)
-    title = models.CharField(max_length=100,null=True)
-    date = models.DateField(null=True)
-    time = models.TimeField(null=True)
-    link = models.CharField(max_length=255,null=True)
-      
-    def __str__(self):
-        return f'{self.course} {self.date}'
+    @staticmethod
+    def create_assignment(data):
+        data['date'] = datetime.now()
+        return Assignment.collection.insert_one(data).inserted_id
 
+# Course Timetables Collection
+class CourseTimetable:
+    collection = db['course_timetables']
 
-class Transaction(models.Model):
-    reference = models.CharField(max_length=100, unique=True)
-    email = models.EmailField()
-    amount = models.PositiveIntegerField()
-    verified = models.BooleanField(default=False)
-    date_created = models.DateTimeField(auto_now_add=True)
+    @staticmethod
+    def add_timetable(data):
+        return CourseTimetable.collection.insert_one(data).inserted_id
 
-    def __str__ (self):
-        return self.reference
+# Exam Timetables Collection
+class ExamTimetable:
+    collection = db['exam_timetables']
 
-#referal code for affiliate
-class Referral (models. Model):
-    user = models.ForeignKey(User, null=True, related_name="userreferal", on_delete = models.CASCADE)
-    referal_code = models.CharField(max_length = 255, null =True, unique = True)
-    create_at = models.DateTimeField(auto_now_add= True)
-    
-    def __str__ (self):
-        return self.referal_code
- 
-# referal tracker
-class ReferralTracker(models.Model):
-    referrer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='referrals')
-    referred_user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='referred_by')
-    created_at = models.DateTimeField(auto_now_add=True)
+    @staticmethod
+    def add_exam(data):
+        return ExamTimetable.collection.insert_one(data).inserted_id
 
-    def __str__(self):
-        return f"{self.referred_user.username} referred by {self.referrer.username}"
+# Transactions Collection
+class Transaction:
+    collection = db['transactions']
 
+    @staticmethod
+    def create_transaction(data):
+        data['date_created'] = datetime.now()
+        return Transaction.collection.insert_one(data).inserted_id
 
+# Referrals Collection
+class Referral:
+    collection = db['referrals']
 
+    @staticmethod
+    def create_referral(data):
+        data['create_at'] = datetime.now()
+        return Referral.collection.insert_one(data).inserted_id
 
-class promotedcourses(models.Model):
-   title = models.CharField(max_length=255,unique=True, null=True)
-   user = models.ForeignKey(User, null=True, related_name="userpromotedcourse", on_delete = models.CASCADE)
-   course = models.ForeignKey(available_Courses, null=True, related_name="coursepromotedcourse", on_delete = models.CASCADE)
-   create_at = models.DateTimeField(auto_now_add= True,null=True)
-   description = models.TextField(null = True)
-   def __str__(self):
-       return self.title
-    
+# Referral Tracker Collection
+class ReferralTracker:
+    collection = db['referral_trackers']
 
+    @staticmethod
+    def create_tracker(data):
+        data['created_at'] = datetime.now()
+        return ReferralTracker.collection.insert_one(data).inserted_id
 
+# Promoted Courses Collection
+class PromotedCourses:
+    collection = db['promoted_courses']
 
+    @staticmethod
+    def promote_course(data):
+        data['create_at'] = datetime.now()
+        return PromotedCourses.collection.insert_one(data).inserted_id

@@ -42,12 +42,18 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
-   
-   # 'django_rest_passwordreset',
+    'django.contrib.sites',  # Required by allauth
+    #'allauth',
+    #'allauth.account',
+    #'allauth.socialaccount',
+    #'allauth.socialaccount.providers.google',  # Add for each provider
+    #'allauth.socialaccount.providers.facebook',
+    #'dj_rest_auth',
+    # 'django_rest_passwordreset',
 
     
 ]
-
+SITE_ID = 1
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -72,8 +78,6 @@ REST_FRAMEWORK = {
 
         'rest_framework.permissions.IsAdminUser',
         'rest_framework.permissions.AllowAny',
-
-        'rest_framework.permissions.IsAdminUser'
 
    ),
      
@@ -105,6 +109,7 @@ TEMPLATES = [
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+"""
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -112,7 +117,7 @@ DATABASES = {
     }
 }
 
-"""
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -126,11 +131,37 @@ DATABASES = {
         }
 
 
-
     }
 }
-
 """
+# mongodb connection
+
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+from urllib.parse import quote_plus
+# Your username and password
+username = "wanjos"
+password = "0903620Wanjos@#$"  # Special characters like @ must be escaped
+
+# Escape the username and password
+escaped_username = quote_plus(username)
+escaped_password = quote_plus(password)
+
+uri = f"mongodb+srv://{escaped_username}:{escaped_password}@newagedatabase.40ybp.mongodb.net/?retryWrites=true&w=majority&appName=newagedatabase"
+
+# Create a new client and connect to the server
+client = MongoClient(uri, server_api=ServerApi('1'))
+db = client['newagedatabase']
+# Send a ping to confirm a successful connection
+try:
+    client.admin.command('ping')
+    print("Pinged your deployment. You successfully connected to MongoDB!")
+except Exception as e:
+    print(e)
+
+
+
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -200,4 +231,7 @@ PAYSTACK_PUBLIC_KEY = 'pk_test_ba6445195c7557b64f6c040a4f9260b5dc7103a8'
 PAYSTACK_SECRET_KEY = 'sk_test_895f2ab861d5b795b4fe5eb79a01b9b593446e57'
 PAYSTACK_CURRENCY = 'NGN'
 
-
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]

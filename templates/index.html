@@ -1,0 +1,8 @@
+<form action ="" method="post">
+    {%csrf_token%}
+    <input type="text" name="searched">
+    <input type="submit" value="Search">
+</form>
+{%for user in searched%}
+ <li>{{user}}</li>
+{% endfor %}

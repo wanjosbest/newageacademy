@@ -13,6 +13,7 @@ from .serializers import (REGAPISerializer,available_Courses_registrationseriali
                           sturegistercourseSerializer,coursemoduleSerializer,promotedcoursesSerializer,
                           ReferalSerializer
                          )
+
 from rest_framework import status
 from rest_framework.response import Response
 from  rest_framework.decorators import api_view, permission_classes
@@ -649,5 +650,5 @@ def refferalcount(request):
        return Response (f" your total referals is:{totalrefferals} and your total earning is: N{totalprice}")
     return Response( status = status.HTTP_401_UNAUTHORIZED)
 
-    
+
    
