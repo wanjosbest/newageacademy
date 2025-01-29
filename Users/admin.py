@@ -25,9 +25,8 @@ admin.site.register(coursemodule)
 admin.site.register(examtimetable)
 admin.site.register(Transaction)
 admin.site.register(promotedcourses)
-"""
 admin.site.register(Referral)
-
+"""
 
 
 
