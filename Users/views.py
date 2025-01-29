@@ -1,3 +1,5 @@
+
+
 from django.shortcuts import render,HttpResponse,get_object_or_404
 import os
 import requests
@@ -7,12 +9,12 @@ from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework import views
-from .serializers import (REGAPISerializer,available_Courses_registrationserialization,liveclassSerializer,
-                          studentattendanceSerializer,anouncementSerializer,CreateAssignmentSerializer,
-                          ChangePasswordSerializer,coursetableSerializer,examtableSerializer,
-                          sturegistercourseSerializer,coursemoduleSerializer,promotedcoursesSerializer,
-                          ReferalSerializer
-                         )
+#from .serializers import (REGAPISerializer,available_Courses_registrationserialization,liveclassSerializer,
+#                          studentattendanceSerializer,anouncementSerializer,CreateAssignmentSerializer,
+ #                         ChangePasswordSerializer,coursetableSerializer,examtableSerializer,
+ ####                         sturegistercourseSerializer,coursemoduleSerializer,promotedcoursesSerializer,
+ #                         ReferalSerializer
+ #                        )
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -20,10 +22,10 @@ from  rest_framework.decorators import api_view, permission_classes
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate,login,logout
 from django.core.exceptions import ObjectDoesNotExist
-from .models import (User,available_Courses,studentatten,anouncement,CreateAssignment,User,available_Courses,
-                     studentatten,coursetimetable,examtimetable,registercoursestu,coursemodule,promotedcourses,
-                     Referral
-)
+#from .models import (User,available_Courses,studentatten,anouncement,CreateAssignment,User,available_Courses,
+#                     studentatten,coursetimetable,examtimetable,registercoursestu,coursemodule,promotedcourses,
+#                     Referral
+#)
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated,IsAdminUser,AllowAny
 from django.contrib import messages
@@ -42,7 +44,7 @@ from django.core.mail import  send_mail,BadHeaderError
 from .paystack import Paystack
 
 
-
+"""
 #Admin CRUD USers
 #admin create user
 @csrf_protect
@@ -649,6 +651,28 @@ def refferalcount(request):
        totalprice = totalrefferals * initialprice
        return Response (f" your total referals is:{totalrefferals} and your total earning is: N{totalprice}")
     return Response( status = status.HTTP_401_UNAUTHORIZED)
+
+"""
+from django.shortcuts import render, redirect
+from .mongo import users_collection
+from .forms import UserForm
+from pymongo import MongoClient
+
+def user_create(request):
+    if request.method == 'POST':
+        form = UserForm(request.POST)
+        if form.is_valid():
+            # Insert new user into MongoDB
+            user_data = form.cleaned_data
+            users_collection.insert_one(user_data)
+            return redirect('create-user')
+    else:
+        form = UserForm()
+    return render(request, 'user_form.html', {'form': form})
+
+def index(request):
+    return render(request, "user_form.html")
+
 
 
    

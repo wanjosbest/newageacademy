@@ -1,3 +1,4 @@
+"""
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from datetime import datetime
@@ -151,3 +152,4 @@ class PromotedCourses:
     def promote_course(data):
         data['create_at'] = datetime.now()
         return PromotedCourses.collection.insert_one(data).inserted_id
+"""
