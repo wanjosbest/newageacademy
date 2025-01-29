@@ -1,3 +1,4 @@
+"""
 from django.contrib import admin
 
 from .models import (User,available_Courses,liveclass,studentatten,anouncement,CreateAssignment,coursetimetable,
@@ -24,6 +25,7 @@ admin.site.register(coursemodule)
 admin.site.register(examtimetable)
 admin.site.register(Transaction)
 admin.site.register(promotedcourses)
+"""
 admin.site.register(Referral)
 
 
